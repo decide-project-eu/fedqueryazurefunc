@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPARQL Query Azure Function Documentation</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        h1, h2, h3, h4 {
+            color: #333;
+        }
+        h1 {
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
+        h2 {
+            margin-top: 30px;
+            color: #555;
+        }
+        h3 {
+            margin-top: 20px;
+            color: #666;
+        }
+        pre {
+            background-color: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            overflow: auto;
+            font-size: 14px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        code {
+            font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+        }
+        ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        li {
+            margin: 10px 0;
+        }
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>SPARQL Query Azure Function</h1>
+    <p>This Azure Function allows you to execute a SPARQL query over one or more RDF sources.</p>
+
+    <h2>Function Endpoints</h2>
+    <ul>
+        <li><b>POST <span id="function-url"></span>/api/FedQuery</b>: Execute a SPARQL query with specified RDF sources.</li>
+    </ul>
+
+    <h2>How to Use</h2>
+    <p>You can use <b>CURL</b>, <b>Postman</b>, or make a POST request programmatically to call this function.</p>
+
+    <h3>1. Using curl</h3>
+    <pre><code class="language-bash">
+curl -X POST "<span id="function-url-curl"></span>/api/FedQuery" \
+     -H "Content-Type: application/json" \
+     -d '{
+           "sparql": "SELECT * WHERE { ?s ?p ?o } ",
+           "sources": [
+               "https://lab1cattledata.solidcommunity.net/RDF/CattleData.ttl",
+               "https://lab2cattledata.solidcommunity.net/RDF/PoultryRDF.ttl"
+           ]
+         }'
+    </code></pre>
+
+    <h3>2. Using Postman</h3>
+    <ul>
+        <li>Set the HTTP method to POST.</li>
+        <li>Enter the URL for the function endpoint: <code><span id="function-url-postman"></span>/api/FedQuery</code></li>
+        <li>Set the headers: <code>Content-Type = application/json</code></li>
+        <li>In the body, select "raw" and enter the JSON query, e.g.:</li>
+    </ul>
+    <pre><code class="language-json">
+{
+    "sparql": "SELECT * WHERE { ?s ?p ?o }",
+    "sources": ["https://lab1cattledata.solidcommunity.net/RDF/CattleData.ttl", "https://lab2cattledata.solidcommunity.net/RDF/PoultryRDF.ttl"]
+}
+    </code></pre>
+
+    <h3>3. Programmatically</h3>
+
+    <h4>Node.js Example</h4>
+    <pre><code class="language-javascript">
+const fetch = require('node-fetch');
+
+const query = {
+    sparql: "SELECT * WHERE { ?s ?p ?o }",
+    sources: [
+        "https://lab1cattledata.solidcommunity.net/RDF/CattleData.ttl",
+        "https://lab2cattledata.solidcommunity.net/RDF/PoultryRDF.ttl"
+    ]
+};
+
+fetch('<span id="function-url-node"></span>/api/FedQuery', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(query)
+})
+.then(response => response.json())
+.then(data => console.log(data))
+.catch(error => console.error('Error:', error));
+    </code></pre>
+
+    <h4>Python Example</h4>
+    <pre><code class="language-python">
+import requests
+import json
+
+url = "<span id='function-url-python'></span>/api/FedQuery"
+query = {
+    "sparql": "SELECT * WHERE { ?s ?p ?o }",
+    "sources": [
+        "https://lab1cattledata.solidcommunity.net/RDF/CattleData.ttl",
+        "https://lab2cattledata.solidcommunity.net/RDF/PoultryRDF.ttl"
+    ]
+}
+
+headers = {'Content-Type': 'application/json'}
+
+response = requests.post(url, json=query, headers=headers)
+print(response.json())
+    </code></pre>
+
+    <h2>Request Body</h2>
+    <p>The POST request requires a JSON body with the following structure:</p>
+    <pre><code class="language-json">
+{
+    "sparql": "SELECT * WHERE { ?s ?p ?o }",
+    "sources": ["https://lab1cattledata.solidcommunity.net/RDF/CattleData.ttl", "https://lab2cattledata.solidcommunity.net/RDF/PoultryRDF.ttl"]
+}
+    </code></pre>
+
+    <h2>Responses</h2>
+    <ul>
+        <li><b>200 OK:</b> Query results in JSON format.</li>
+        <li><b>400 Bad Request:</b> Invalid JSON or missing fields.</li>
+        <li><b>500 Internal Server Error:</b> An internal error occurred.</li>
+    </ul>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script>
+        // Dynamically set the Azure Function URL
+        const functionUrl = window.location.origin;
+        document.getElementById('function-url').textContent = functionUrl;
+        document.getElementById('function-url-curl').textContent = functionUrl;
+        document.getElementById('function-url-postman').textContent = functionUrl;
+        document.getElementById('function-url-node').textContent = functionUrl;
+        document.getElementById('function-url-python').textContent = functionUrl;
+    </script>
+</body>
+</html>
