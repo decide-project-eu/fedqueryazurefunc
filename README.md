@@ -5,6 +5,7 @@ This Azure Function allows you to execute a SPARQL query over one or more RDF so
 ## Function Endpoints
 
 - **POST `/api/FedQuery`**: Execute a SPARQL query with specified RDF sources.
+- **GET `/api/FedQuery`**: Displays Azure Function documentation.
 
 ## How to Use
 
