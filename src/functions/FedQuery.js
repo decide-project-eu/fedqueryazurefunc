@@ -187,7 +187,28 @@ const executeQueryWithCursor = async (sparql, sources, options = {}) => {
 };
 
 /**
- * Execute SPARQL query with offset-based pagination (legacy)
+ * Inject LIMIT and OFFSET into SPARQL query for native pagination
+ */
+const injectLimitOffset = (sparql, limit, offset) => {
+    // Remove any existing LIMIT/OFFSET
+    let cleanedSparql = sparql
+        .replace(/\bLIMIT\s+\d+/gi, '')
+        .replace(/\bOFFSET\s+\d+/gi, '')
+        .trim();
+
+    // Add LIMIT and OFFSET at the end
+    // Request limit+1 to check if there are more results
+    cleanedSparql += `\nLIMIT ${limit + 1}`;
+    if (offset > 0) {
+        cleanedSparql += `\nOFFSET ${offset}`;
+    }
+
+    return cleanedSparql;
+};
+
+/**
+ * Execute SPARQL query with offset-based pagination
+ * Uses native SPARQL LIMIT/OFFSET for efficiency
  */
 const executeQueryWithOffset = async (sparql, sources, options = {}) => {
     const {
@@ -198,8 +219,10 @@ const executeQueryWithOffset = async (sparql, sources, options = {}) => {
 
     const engine = createEngine();
     const results = [];
-    let skipped = 0;
     let hasMore = false;
+
+    // Inject LIMIT/OFFSET into the query for native pagination
+    const paginatedQuery = injectLimitOffset(sparql, limit, offset);
 
     const abortController = new AbortController();
     const timeoutId = setTimeout(() => {
@@ -207,7 +230,7 @@ const executeQueryWithOffset = async (sparql, sources, options = {}) => {
     }, timeout);
 
     try {
-        const bindingsStream = await engine.queryBindings(sparql, {
+        const bindingsStream = await engine.queryBindings(paginatedQuery, {
             sources,
             httpAbortSignal: abortController.signal,
         });
@@ -218,11 +241,7 @@ const executeQueryWithOffset = async (sparql, sources, options = {}) => {
                 break;
             }
 
-            if (skipped < offset) {
-                skipped++;
-                continue;
-            }
-
+            // If we got more than limit, there are more results
             if (results.length >= limit) {
                 hasMore = true;
                 break;
@@ -243,7 +262,7 @@ const executeQueryWithOffset = async (sparql, sources, options = {}) => {
                 limit,
                 returned: results.length,
                 hasMore,
-                nextOffset: hasMore ? offset + limit : null,
+                nextOffset: hasMore ? offset + results.length : null,
             },
             meta: {
                 queryTimeMs: Date.now(),
