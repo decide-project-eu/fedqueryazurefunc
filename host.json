@@ -1,24 +1,11 @@
 {
   "version": "2.0",
-  "functionTimeout": "00:10:00",
   "logging": {
     "applicationInsights": {
       "samplingSettings": {
         "isEnabled": true,
         "excludedTypes": "Request"
       }
-    },
-    "logLevel": {
-      "default": "Information",
-      "Host.Results": "Information",
-      "Function": "Information"
-    }
-  },
-  "extensions": {
-    "http": {
-      "routePrefix": "api",
-      "maxOutstandingRequests": 200,
-      "maxConcurrentRequests": 100
     }
   },
   "extensionBundle": {
