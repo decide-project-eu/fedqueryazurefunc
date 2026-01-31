@@ -16,69 +16,51 @@ const CONFIG = {
 const createEngine = () => new QueryEngine();
 
 /**
- * Inject cursor filter into SPARQL query for efficient pagination
+ * Prepare SPARQL query for cursor-based pagination
  *
- * This modifies the query to:
- * 1. Add ORDER BY for consistent ordering
- * 2. Add FILTER to skip results before the cursor
+ * Handles UNION queries by wrapping the entire WHERE clause content
+ * and adding filter at the outer level.
  *
  * @param {string} sparql - Original SPARQL query
  * @param {string} cursor - Last seen value (URI) to continue from
  * @param {string} cursorField - Variable name to use for cursor (e.g., 'Sample')
+ * @param {number} limit - Number of results to fetch
  * @returns {string} Modified SPARQL query
  */
-const injectCursorFilter = (sparql, cursor, cursorField) => {
-    if (!cursor) return sparql;
-
-    // Escape special characters in cursor value for SPARQL
-    const escapedCursor = cursor.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-
-    // Build the cursor filter
-    const cursorFilter = `FILTER(STR(?${cursorField}) > "${escapedCursor}")`;
-
-    // Find the WHERE clause and inject the filter
-    // Handle both single WHERE {} and nested patterns
-    const whereMatch = sparql.match(/WHERE\s*\{/i);
-    if (!whereMatch) {
-        throw new Error('Cannot inject cursor: WHERE clause not found in query');
-    }
-
-    const whereIndex = whereMatch.index + whereMatch[0].length;
-    const modifiedSparql =
-        sparql.slice(0, whereIndex) +
-        `\n  ${cursorFilter}\n` +
-        sparql.slice(whereIndex);
-
-    return modifiedSparql;
-};
-
-/**
- * Add ORDER BY clause if not present (required for consistent cursor pagination)
- *
- * @param {string} sparql - SPARQL query
- * @param {string} cursorField - Field to order by
- * @returns {string} Query with ORDER BY
- */
-const ensureOrderBy = (sparql, cursorField) => {
-    // Check if ORDER BY already exists
-    if (/ORDER\s+BY/i.test(sparql)) {
-        return sparql;
-    }
-
-    // Remove existing LIMIT/OFFSET (we handle these ourselves)
-    let cleanedSparql = sparql
+const prepareCursorQuery = (sparql, cursor, cursorField, limit) => {
+    // Remove existing LIMIT/OFFSET
+    let query = sparql
         .replace(/\bLIMIT\s+\d+/gi, '')
         .replace(/\bOFFSET\s+\d+/gi, '')
         .trim();
 
-    // Add ORDER BY before any trailing }
-    // Find the last closing brace of the WHERE clause
-    const lastBraceIndex = cleanedSparql.lastIndexOf('}');
-    if (lastBraceIndex === -1) {
-        return cleanedSparql + `\nORDER BY ?${cursorField}`;
+    // Add cursor filter if cursor provided
+    if (cursor) {
+        // Escape special characters in cursor value for SPARQL
+        const escapedCursor = cursor.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+
+        // Build the cursor filter - use string comparison for URIs
+        const cursorFilter = `FILTER(STR(?${cursorField}) > "${escapedCursor}")`;
+
+        // Find the WHERE clause and inject the filter right after opening brace
+        const whereMatch = query.match(/WHERE\s*\{/i);
+        if (!whereMatch) {
+            throw new Error('Cannot inject cursor: WHERE clause not found in query');
+        }
+
+        const whereIndex = whereMatch.index + whereMatch[0].length;
+        query = query.slice(0, whereIndex) + `\n  ${cursorFilter}\n` + query.slice(whereIndex);
     }
 
-    return cleanedSparql + `\nORDER BY ?${cursorField}`;
+    // Add ORDER BY if not present (required for consistent pagination)
+    if (!/ORDER\s+BY/i.test(query)) {
+        query += `\nORDER BY STR(?${cursorField})`;
+    }
+
+    // Add LIMIT (fetch one extra to check if there are more results)
+    query += `\nLIMIT ${limit + 1}`;
+
+    return query;
 };
 
 /**
@@ -87,6 +69,11 @@ const ensureOrderBy = (sparql, cursorField) => {
  * Cursor pagination is more efficient than offset because:
  * - Offset: Must scan and skip N results (O(n) for page n)
  * - Cursor: Filters directly to starting point (O(1) for any page)
+ *
+ * The query is modified to:
+ * 1. Add FILTER(STR(?Sample) > "cursor") to skip already-fetched results
+ * 2. Add ORDER BY STR(?Sample) for consistent ordering
+ * 3. Add LIMIT to control page size
  */
 const executeQueryWithCursor = async (sparql, sources, options = {}) => {
     const {
@@ -101,11 +88,8 @@ const executeQueryWithCursor = async (sparql, sources, options = {}) => {
     let hasMore = false;
     let lastCursorValue = null;
 
-    // Prepare the query with cursor support
-    let preparedQuery = ensureOrderBy(sparql, cursorField);
-    if (cursor) {
-        preparedQuery = injectCursorFilter(preparedQuery, cursor, cursorField);
-    }
+    // Prepare the query with cursor, ORDER BY, and LIMIT
+    const preparedQuery = prepareCursorQuery(sparql, cursor, cursorField, limit);
 
     // Create abort controller for timeout
     const abortController = new AbortController();
@@ -126,7 +110,7 @@ const executeQueryWithCursor = async (sparql, sources, options = {}) => {
                 break;
             }
 
-            // We fetch limit + 1 to check if there are more results
+            // We fetched limit + 1 to check if there are more results
             if (results.length >= limit) {
                 hasMore = true;
                 break;
