@@ -25,6 +25,7 @@ local.settings.json
 
 node_modules
 dist
+.claude/
 
 # Local python packages
 .python_packages/
