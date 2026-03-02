@@ -11,7 +11,7 @@ Publish
 *.Cache
 *.DS_Store
 project.lock.json
-
+notes.md
 /packages
 /TestResults
 
