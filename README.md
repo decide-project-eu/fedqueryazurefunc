@@ -1,6 +1,6 @@
 # SPARQL Query Azure Function
 
-This Azure Function executes federated SPARQL queries over one or more remote RDF/TTL sources. It fetches, parses, and queries the data in-memory for fast performance.
+This Azure Function executes federated SPARQL queries over one or more remote RDF/TTL sources using Comunica's file query engine with automatic multi-source optimization.
 
 ## Function Endpoints
 
@@ -114,26 +114,21 @@ The POST request requires a JSON body with the following structure:
         { "s": "http://example.org/subject", "p": "http://example.org/predicate", "o": "value" }
     ],
     "count": 100,
-    "hasMore": true,
+    "hasMore": false,
     "timedOut": false,
-    "timeMs": 3316,
-    "tripleCount": 806025,
-    "fetchTimeMs": 3178,
-    "queryTimeMs": 138
+    "timeMs": 22500,
+    "queryTimeMs": 22500
 }
 ```
 
-| Field            | Description                                                 |
-| ---------------- | ----------------------------------------------------------- |
-| `data`         | Array of result objects (variable name → value)            |
-| `count`        | Number of rows returned                                     |
-| `hasMore`      | Whether more results exist beyond the limit                 |
-| `timedOut`     | Whether the query was aborted due to timeout                |
-| `timeMs`       | Total execution time in milliseconds                        |
-| `tripleCount`  | Total RDF triples loaded into the in-memory store           |
-| `fetchTimeMs`  | Time spent downloading and parsing TTL files                |
-| `queryTimeMs`  | Time spent executing the SPARQL query                       |
-| `sourceErrors` | (optional) Array of errors from sources that failed to load |
+| Field          | Description                                          |
+| -------------- | ---------------------------------------------------- |
+| `data`       | Array of result objects (variable name → value)     |
+| `count`      | Number of rows returned                              |
+| `hasMore`    | Whether more results exist beyond the limit          |
+| `timedOut`   | Whether the query was aborted due to timeout         |
+| `timeMs`     | Total execution time in milliseconds                 |
+| `queryTimeMs`| Time spent fetching sources and executing the query  |
 
 ## Responses
 
@@ -143,27 +138,25 @@ The POST request requires a JSON body with the following structure:
 
 ## Performance
 
-Tested locally with 6 Solid-hosted TTL sources (~5 MB each, 806,025 total triples):
+Benchmarked against Solid-hosted TTL sources (5–12 sources, up to 12 pods):
 
-| Metric                 | Value                        |
-| ---------------------- | ---------------------------- |
-| Total time (6 sources) | **~3.3 seconds**       |
-| Fetch + parse time     | ~3.2 seconds (network-bound) |
-| SPARQL query time      | ~138 milliseconds            |
+| Experiment                          | Paper baseline | This function | Speedup  |
+| ----------------------------------- | -------------- | ------------- | -------- |
+| Q1 simple — 5 cattle pods           | 50.68 s        | ~22 s         | **2.3x** |
+| Q2 UNION — 12 vertical species pods | 57.85 s        | ~23 s         | **2.5x** |
+| Q2 UNION — 6 horizontal pods        | 114.73 s       | ~23 s         | **5.0x** |
 
-## Architecture & Performance
+## Architecture
 
-| Component      | Description                                         |
-| -------------- | --------------------------------------------------- |
-| Engine         | `@comunica/query-sparql-rdfjs` v5.1.3             |
-| Strategy       | Parallel fetch → in-memory indexed store           |
-| Parser         | N3.js                                               |
-| Storage        | `rdf-stores` RdfStore with GSPO/GPOS/GOSP indexes |
-| 6-source query | **3.3 seconds**                               |
+| Component  | Description                                                                 |
+| ---------- | --------------------------------------------------------------------------- |
+| Engine     | `@comunica/query-sparql-file` v5.2.0                                      |
+| Strategy   | Comunica fetches and parses TTL sources internally; the `group-file-sources` optimizer (PR #1681) automatically merges multiple file sources into a single in-memory store before querying |
+| Singleton  | Engine instance is reused across requests to avoid startup overhead         |
+| Timeout    | AbortController with custom fetch ensures HTTP fetches are cancelled on timeout |
 
 ## Notes
 
 - Replace `<AZURE_FUNCTION_URL>` with the actual URL of your Azure Function.
 - Ensure that the RDF sources you provide are accessible and properly formatted.
 - The function processes SPARQL queries and returns results in JSON format.
-- Failed sources are handled gracefully — partial results from healthy sources are still returned.
