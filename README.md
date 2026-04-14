@@ -140,11 +140,11 @@ The POST request requires a JSON body with the following structure:
 
 Benchmarked against Solid-hosted TTL sources (5–12 sources, up to 12 pods):
 
-| Experiment                          | Paper baseline | This function | Speedup  |
-| ----------------------------------- | -------------- | ------------- | -------- |
-| Q1 simple — 5 cattle pods           | 50.68 s        | ~22 s         | **2.3x** |
-| Q2 UNION — 12 vertical species pods | 57.85 s        | ~23 s         | **2.5x** |
-| Q2 UNION — 6 horizontal pods        | 114.73 s       | ~23 s         | **5.0x** |
+| Experiment                          | Mean time |
+| ----------------------------------- | --------- |
+| Q1 simple — 5 cattle pods           | ~22 s     |
+| Q2 UNION — 12 vertical species pods | ~23 s     |
+| Q2 UNION — 6 horizontal pods        | ~23 s     |
 
 ## Architecture
 
