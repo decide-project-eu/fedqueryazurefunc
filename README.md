@@ -151,9 +151,20 @@ Benchmarked against Solid-hosted TTL sources (5–12 sources, up to 12 pods):
 | Component  | Description                                                                 |
 | ---------- | --------------------------------------------------------------------------- |
 | Engine     | `@comunica/query-sparql-file` v5.2.0                                      |
-| Strategy   | Comunica fetches and parses TTL sources internally; the `group-file-sources` optimizer (PR #1681) automatically merges multiple file sources into a single in-memory store before querying |
+| Strategy   | Comunica fetches and parses TTL sources internally; the `group-file-sources` optimizer automatically merges multiple file sources into a single in-memory store before querying |
 | Singleton  | Engine instance is reused across requests to avoid startup overhead         |
 | Timeout    | AbortController with custom fetch ensures HTTP fetches are cancelled on timeout |
+
+## Credits
+
+This function is built on [Comunica](https://github.com/comunica/comunica), a highly modular and flexible meta query engine for the Web. Performance improvements in v5.2.0 are made possible by [PR #1681](https://github.com/comunica/comunica/pull/1681).
+
+```
+Taelman, R., Van Herwegen, J., Vander Sande, M., & Verborgh, R. (2018).
+Comunica: a Modular SPARQL Query Engine for the Web.
+In Proceedings of the 17th International Semantic Web Conference (ISWC).
+https://doi.org/10.1007/978-3-030-00671-6_15
+```
 
 ## Notes
 
