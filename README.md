@@ -104,7 +104,7 @@ The POST request requires a JSON body with the following structure:
 | `sparql`  | Yes      | —      | SPARQL SELECT query string            |
 | `sources` | Yes      | —      | Array of remote TTL file URLs         |
 | `limit`   | No       | 5000    | Max rows to return (capped at 10,000) |
-| `timeout` | No       | 180000  | Timeout in ms (capped at 300,000)     |
+| `timeout` | No       | 300000  | Timeout in ms (capped at 300,000)     |
 
 ## Response Format
 

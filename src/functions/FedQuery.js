@@ -5,7 +5,7 @@ const path = require('path');
 
 // ─── Configuration ───────────────────────────────────────────────────────────
 const DEFAULT_LIMIT = 5000;
-const DEFAULT_TIMEOUT_MS = 180000; // 3 minutes
+const DEFAULT_TIMEOUT_MS = 300000; // 5 minutes
 
 // ─── Singleton Engine ────────────────────────────────────────────────────────
 let engineInstance = null;
