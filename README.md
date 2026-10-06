@@ -1,3 +1,5 @@
+
+# Published paper : https://www.frontiersin.org/journals/veterinary-science/articles/10.3389/fvets.2026.1962800/full
 # SPARQL Query Azure Function
 
 This Azure Function executes federated SPARQL queries over one or more remote RDF/TTL sources using Comunica's file query engine with automatic multi-source optimization.
